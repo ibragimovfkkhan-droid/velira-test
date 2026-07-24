@@ -37,6 +37,12 @@ function createTransporter() {
     port,
     secure: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === "true" : port === 465,
     auth: { user, pass },
+    // Some hosts (free tiers included) silently drop outbound SMTP packets
+    // instead of refusing the connection — without these, a blocked port
+    // would hang the request indefinitely instead of failing fast.
+    connectionTimeout: 10000,
+    greetingTimeout: 10000,
+    socketTimeout: 10000,
   });
   cachedTransporterKey = key;
   return cachedTransporter;

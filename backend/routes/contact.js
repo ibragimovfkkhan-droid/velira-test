@@ -44,9 +44,11 @@ router.post("/", async (req, res) => {
     `📞 ${entry.contact}\n\n` +
     `${entry.message}`;
 
-  // Telegram and email notifications are independent — a failure in one
-  // must never block the message from being saved / the API responding.
-  await Promise.allSettled([sendTelegramMessage(text), sendAdminContactEmail(entry)]);
+  // Telegram and email notifications must never block the response — if an
+  // outbound SMTP port is blocked by the host, sendMail can hang for a long
+  // time. Fire them off in the background and answer the user right away;
+  // the message is already saved either way.
+  Promise.allSettled([sendTelegramMessage(text), sendAdminContactEmail(entry)]).catch(() => {});
 
   res.status(201).json({ success: true });
 });

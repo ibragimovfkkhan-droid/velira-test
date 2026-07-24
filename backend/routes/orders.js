@@ -97,9 +97,11 @@ router.post("/", async (req, res) => {
     `\n${itemsText}\n\n` +
     `💰 <b>Jami: ${order.total.toLocaleString("ru-RU")} so'm</b>`;
 
-  // Telegram and email notifications are independent — a failure in one
-  // must never block the order from being saved / the API responding.
-  await Promise.allSettled([sendTelegramMessage(message), sendAdminOrderEmail(order)]);
+  // Telegram and email notifications must never block the response — if an
+  // outbound SMTP port is blocked by the host, sendMail can hang for a long
+  // time. Fire them off in the background and answer the user right away;
+  // the order is already saved either way.
+  Promise.allSettled([sendTelegramMessage(message), sendAdminOrderEmail(order)]).catch(() => {});
 
   res.status(201).json({ success: true, order });
 });
